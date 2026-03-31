@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Kalkulator żywienia</title>
+
+<!-- Manifest PWA -->
+<link rel="manifest" href="manifest.webmanifest">
+
+<!-- Kolor aplikacji -->
+<meta name="theme-color" content="#0078ff">
+
+<!-- Ikony -->
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" sizes="192x192" href="icon-192.png">
+<link rel="icon" sizes="512x512" href="icon-512.png">
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: #f0f3f7;
+    }
+
+    h1 {
+        text-align: center;
+        margin-bottom: 25px;
+    }
+
+    .card {
+        background: #fff;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        max-width: 480px;
+        margin: auto;
+    }
+
+    label {
+        font-weight: bold;
+        margin-top: 15px;
+        display: block;
+    }
+
+    input {
+        width: 100%;
+        padding: 10px;
+        margin-top: 6px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        font-size: 16px;
+    }
+
+    button {
+        width: 100%;
+        padding: 12px;
+        font-size: 18px;
+        border: none;
+        background: #0078ff;
+        color: white;
+        border-radius: 10px;
+        margin-top: 20px;
+    }
+
+    .result {
+        background: #e6f1ff;
+        padding: 18px;
+        margin-top: 20px;
+        border-radius: 10px;
+        border-left: 5px solid #0078ff;
+    }
+
+    .value {
+        font-size: 22px;
+        font-weight: bold;
+    }
+</style>
+</head>
+
+<body>
+
+<h1>Kalkulator żywienia</h1>
+
+<div class="card">
+
+    <label>Porcja dzienna (ml)</label>
+    <input id="dzienna" type="number">
+
+    <label>Podanie do żołądka – ilość (ml)</label>
+    <input id="zoladek_ml" type="number">
+
+    <label>Podanie do żołądka – razy dziennie</label>
+    <input id="zoladek_razy" type="number">
+
+    <label>Podanie do jelita – ilość (ml / godzinę)</label>
+    <input id="jelito_ml" type="number">
+
+    <button onclick="oblicz()">Oblicz</button>
+
+    <div id="wynik" class="result" style="display:none"></div>
+</div>
+
+<script>
+// ŁADOWANIE zapisanych danych
+window.onload = function () {
+    ['dzienna','zoladek_ml','zoladek_razy','jelito_ml'].forEach(id => {
+        if(localStorage.getItem(id)){
+            document.getElementById(id).value = localStorage.getItem(id);
+        }
+    });
+};
+
+function oblicz() {
+    const dzienna = Number(dokument('dzienna'));
+    const zoladek_ml = Number(dokument('zoladek_ml'));
+    const zoladek_razy = Number(dokument('zoladek_razy'));
+    const jelito_ml = Number(dokument('jelito_ml'));
+
+    // zapisywanie danych
+    ['dzienna','zoladek_ml','zoladek_razy','jelito_ml'].forEach(id => {
+        localStorage.setItem(id, dokument(id));
+    });
+
+    const zoladek_total = zoladek_ml * zoladek_razy;
+    const jelito_pozostale = dzienna - zoladek_total;
+
+    if (jelito_pozostale < 0) {
+        wyswietl("❗ Podanie do żołądka przekracza dzienną porcję!");
+        return;
+    }
+
+    const godziny_jelito = jelito_pozostale / jelito_ml;
+    const godziny_odlaczenia = 24 - godziny_jelito;
+
+    wyswietl(`
+        <p><b>Łącznie do żołądka:</b> ${zoladek_total} ml</p>
+        <p><b>Mleko do jelita:</b> ${jelito_pozostale} ml</p>
+        <p><b>Czas podawania do jelita:</b> <span class="value">${godziny_jelito.toFixed(1)} h</span></p>
+        <p><b>Czas odłączenia:</b> <span class="value">${godziny_odlaczenia.toFixed(1)} h</span></p>
+    `);
+}
+
+function wyswietl(html){
+    const el = document.getElementById("wynik");
+    el.style.display = "block";
+    el.innerHTML = html;
+}
+
+function dokument(id){
+    return document.getElementById(id).value;
+}
+
+// REJESTRACJA SERVICE WORKERA
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js");
+}
+</script>
+
+</body>
+</html>
